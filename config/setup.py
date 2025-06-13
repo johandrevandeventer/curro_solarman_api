@@ -6,3 +6,10 @@ Date: 2025-06-13
 
 # Configuration constants
 EXCEL_INPUT_FILE = "resources/device_details/device_ids.xlsx"
+
+# Date settings
+START_DATE = "2024-12-05"
+END_DATE = "2025-12-31"
+
+# Timezone settings
+TIMEZONE = "Africa/Johannesburg"
