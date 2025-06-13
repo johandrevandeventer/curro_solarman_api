@@ -5,9 +5,11 @@ Date: 2025-06-13
 """
 
 from datetime import datetime
-from time import time
+import time
 from signal_handler import signal_handler
-from utils import utils
+from utils import utils, files
+from config import setup
+from api import client
 
 
 def main():
@@ -28,6 +30,47 @@ def main():
     utils.print_header(
         f"Starting Data Collection at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
+
+    time.sleep(2)
+
+    # =============================================================================
+    # STEP 2: READ DEVICE IDS
+    # =============================================================================
+    utils.print_header("Reading Device IDs from Excel File")
+    read_device_id_file_start_time = time.time()
+    device_map = files.read_device_ids(setup.EXCEL_INPUT_FILE)
+    if not device_map:
+        return
+
+    read_device_id_file_end_time = time.time()
+    read_device_id_file_duration = (
+        read_device_id_file_end_time - read_device_id_file_start_time
+    )
+
+    print(
+        f"⏱  Time taken to read device IDs: {read_device_id_file_duration:.2f} seconds"
+    )
+    print(f"✔  Found {len(device_map)} device IDs to process\n")
+
+    time.sleep(2)
+
+    utils.print_header("Devices Found")
+
+    for serial, device_name in device_map.items():
+        print(f"• {device_name} ({serial})")
+
+    time.sleep(2)
+
+    # =============================================================================
+    # STEP 3: CREATE SESSION
+    # =============================================================================
+    utils.print_header("Creating API Session")
+    session = client.create_session()
+    if not session:
+        print("✖  Error creating API session")
+        return
+
+    print("✔  API session created successfully")
 
     time.sleep(2)
 
