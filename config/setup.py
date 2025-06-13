@@ -6,6 +6,7 @@ Date: 2025-06-13
 
 # Configuration constants
 EXCEL_INPUT_FILE = "resources/device_details/device_ids.xlsx"
+RAW_CSV_OUTPUT = "resources/raw_data"
 
 # Date settings
 START_DATE = "2024-12-05"
