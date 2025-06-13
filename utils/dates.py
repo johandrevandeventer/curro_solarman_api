@@ -48,3 +48,9 @@ def group_unix_ranges_by_month(
         grouped.setdefault(month_key, []).append((start_unix, end_unix))
 
     return grouped
+
+
+def get_month_year_string(unix_timestamp):
+    """Extract year and month from Unix timestamp."""
+    dt = datetime.fromtimestamp(unix_timestamp)
+    return dt.strftime("%B %Y")
