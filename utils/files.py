@@ -1,4 +1,8 @@
-"""Utility functions for file operations."""
+"""
+Utility functions for file operations.
+Author: Johandré van Deventer
+Date: 2025-06-13
+"""
 
 import pandas as pd
 
