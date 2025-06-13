@@ -6,8 +6,9 @@ Date: 2025-06-13
 
 from datetime import datetime
 import time
+from zoneinfo import ZoneInfo
 from signal_handler import signal_handler
-from utils import utils, files
+from utils import utils, dates, files
 from config import setup, env
 from api import auth, client
 
@@ -107,6 +108,26 @@ def main():
     except Exception as e:
         print(f"✖  Error fetching access token: {e}")
         return
+
+    time.sleep(2)
+
+    # =============================================================================
+    # STEP 5: PREPARE DATE RANGES
+    # =============================================================================
+    utils.print_header("Preparing Date Ranges for Data Collection")
+
+    TZ = ZoneInfo(setup.TIMEZONE)
+    date_ranges = dates.get_daily_unix_ranges(
+        setup.START_DATE, setup.END_DATE, tz_name=setup.TIMEZONE
+    )
+    start_unix = date_ranges[0][0]
+    end_unix = date_ranges[-1][1]
+    start_date_str = datetime.fromtimestamp(start_unix, TZ).strftime("%Y-%m-%d")
+    end_date_str = datetime.fromtimestamp(end_unix, TZ).strftime("%Y-%m-%d")
+
+    print(f"• Date range: {start_unix} to {end_unix}")
+    print(f"• Date range: {start_date_str} to {end_date_str}")
+    print(f"• Total days to process: {len(date_ranges)}")
 
     time.sleep(2)
 
