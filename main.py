@@ -145,6 +145,8 @@ def main():
 
     month_ranges = dates.group_unix_ranges_by_month(date_ranges)
 
+    total_records = 0
+
     for month, month_range in month_ranges.items():
         month_year_str = dates.get_month_year_string(month_range[0][0])
 
@@ -156,7 +158,7 @@ def main():
             unit="device",
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
             position=0,
-            leave=True,
+            leave=False,
         )
 
         for serial, device_name in device_map.items():
@@ -206,6 +208,7 @@ def main():
 
                         if not df.empty:
                             record_count += len(df)
+                            total_records += record_count
                             processing_time = time.time() - start_time
                             total_processing_time += processing_time
                             avg_time_per_day_total = total_processing_time / (
@@ -233,13 +236,24 @@ def main():
 
             devices_bar.update(1)
             tqdm.write(
-                f"✔  Completed processing {device_name} ({serial}) for month: {month_year_str}. Records: {record_count}, Avg Time/Day: {avg_time_per_day_total:.2f}s"
+                f"✔  Completed collecting {device_name} ({serial}) for month: {month_year_str}. Records: {record_count}, Avg Time/Day: {avg_time_per_day_total:.2f}s"
             )
 
         devices_bar.set_postfix(
             {"Month": month_year_str, "Total Devices": len(device_map)}
         )
         devices_bar.close()
+
+    total_time = time.time() - start_time
+    utils.print_header("Data Collection Completed")
+    print(f"✔  Total records collected: {total_records}")
+    print(f"✔  Total time taken: {total_time:.2f} seconds")
+
+    #  =============================================================================
+    # STEP 7: CLEAN UP
+    # =============================================================================
+
+    utils.print_header("Cleaning up raw data files")
 
 
 if __name__ == "__main__":
