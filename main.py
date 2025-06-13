@@ -4,6 +4,7 @@ Author: Johandré van Deventer
 Date: 2025-06-13
 """
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import time
 from zoneinfo import ZoneInfo
@@ -12,7 +13,7 @@ from tqdm import tqdm
 from signal_handler import signal_handler
 from utils import utils, dates, files
 from config import setup, env
-from api import auth, client
+from api import auth, client, data
 
 
 def main():
@@ -160,6 +161,35 @@ def main():
             if signal_handler.shutdown_requested:
                 print("\nShutdown requested, exiting data collection loop...")
                 return
+
+            with ThreadPoolExecutor(max_workers=30) as executor:
+                futures = {
+                    executor.submit(
+                        data.fetch_device_data,
+                        session,
+                        access_token,
+                        serial,
+                        start_unix,
+                        end_unix,
+                    ): (start_unix, end_unix)
+                    for start_unix, end_unix in month_range
+                }
+
+                device_bar = tqdm(
+                    total=len(futures),
+                    desc=f"Collecting {device_name[:15]}... ({serial})",
+                    unit="day",
+                    leave=False,
+                    bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+                )
+
+                for future in as_completed(futures):
+                    if signal_handler.shutdown_requested:
+                        print("\nShutdown requested, exiting data collection loop...")
+                        return
+
+                    result = future.result()
+                    device_bar.update(1)
 
             devices_bar.update(1)
 
