@@ -7,6 +7,8 @@ Date: 2025-06-13
 from datetime import datetime
 import time
 from zoneinfo import ZoneInfo
+from tqdm import tqdm
+
 from signal_handler import signal_handler
 from utils import utils, dates, files
 from config import setup, env
@@ -130,6 +132,41 @@ def main():
     print(f"• Total days to process: {len(date_ranges)}")
 
     time.sleep(2)
+
+    # =============================================================================
+    # STEP 6: START DATA COLLECTION
+    # =============================================================================
+    utils.print_header("Starting Data Collection")
+
+    time.sleep(1)
+
+    month_ranges = dates.group_unix_ranges_by_month(date_ranges)
+
+    for _, month_range in month_ranges.items():
+        month_year_str = dates.get_month_year_string(month_range[0][0])
+
+        print(f"Processing month: {month_year_str} ({len(month_range)} days)")
+
+        devices_bar = tqdm(
+            total=len(device_map),
+            desc="Devices",
+            unit="device",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+            position=0,
+            leave=True,
+        )
+
+        for serial, device_name in device_map.items():
+            if signal_handler.shutdown_requested:
+                print("\nShutdown requested, exiting data collection loop...")
+                return
+
+            devices_bar.update(1)
+
+        devices_bar.set_postfix(
+            {"Month": month_year_str, "Total Devices": len(device_map)}
+        )
+        devices_bar.close()
 
 
 if __name__ == "__main__":
