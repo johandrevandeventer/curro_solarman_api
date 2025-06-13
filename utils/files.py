@@ -22,5 +22,9 @@ def read_device_ids(file_path: str) -> dict:
         device_map = sorted_device_map
 
         return device_map
+    except FileNotFoundError:
+        print(f"✖  Error: File not found - {file_path}")
+        return {}
     except Exception as e:
+        print(f"✖  Error: {e}")
         return {}
