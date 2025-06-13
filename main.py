@@ -8,8 +8,8 @@ from datetime import datetime
 import time
 from signal_handler import signal_handler
 from utils import utils, files
-from config import setup
-from api import client
+from config import setup, env
+from api import auth, client
 
 
 def main():
@@ -31,6 +31,20 @@ def main():
         f"Starting Data Collection at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
 
+    time.sleep(2)
+
+    # =============================================================================
+    # STEP 2: CHECK ENVIRONMENT VARIABLES
+    # =============================================================================
+    utils.print_header("Checking Environment Variables")
+
+    try:
+        env.check_required_env_vars()
+    except EnvironmentError as e:
+        print(f"✖  {e}")
+        return
+
+    print("✔  All required environment variables are set")
     time.sleep(2)
 
     # =============================================================================
@@ -71,6 +85,28 @@ def main():
         return
 
     print("✔  API session created successfully")
+
+    time.sleep(2)
+
+    # =============================================================================
+    # STEP 4: FETCH ACCESS TOKEN
+    # =============================================================================
+    utils.print_header("Fetching Access Token")
+    try:
+        get_access_token_start_time = time.time()
+        access_token = auth.get_access_token(session)
+        get_access_token_end_time = time.time()
+        get_access_token_duration = (
+            get_access_token_end_time - get_access_token_start_time
+        )
+        print(
+            f"⏱  Time taken to fetch access token: {get_access_token_duration:.2f} seconds"
+        )
+        print("✔  Access token fetched successfully")
+        print(f"🔑 Access Token: {access_token}")
+    except Exception as e:
+        print(f"✖  Error fetching access token: {e}")
+        return
 
     time.sleep(2)
 
