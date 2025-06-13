@@ -1,4 +1,8 @@
-"""Utility functions for various tasks."""
+"""
+Utility functions for various tasks.
+Author: Johandré van Deventer
+Date: 2025-06-13
+"""
 
 
 def print_header(header: str = "Header", width: int = 80) -> None:
