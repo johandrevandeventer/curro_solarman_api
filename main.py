@@ -6,6 +6,7 @@ Date: 2025-06-13
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 import time
 from zoneinfo import ZoneInfo
 from tqdm import tqdm
@@ -14,6 +15,7 @@ from signal_handler import signal_handler
 from utils import utils, dates, files
 from config import setup, env
 from api import auth, client, data
+from models import process_api
 
 
 def main():
@@ -143,7 +145,7 @@ def main():
 
     month_ranges = dates.group_unix_ranges_by_month(date_ranges)
 
-    for _, month_range in month_ranges.items():
+    for month, month_range in month_ranges.items():
         month_year_str = dates.get_month_year_string(month_range[0][0])
 
         print(f"Processing month: {month_year_str} ({len(month_range)} days)")
@@ -158,6 +160,10 @@ def main():
         )
 
         for serial, device_name in device_map.items():
+            record_count = 0  # Track number of records processed
+            total_processing_time = 0  # Track total time spent processing
+            avg_time_per_day_total = 0  # Track average time per day
+
             if signal_handler.shutdown_requested:
                 print("\nShutdown requested, exiting data collection loop...")
                 return
@@ -180,6 +186,7 @@ def main():
                     desc=f"Collecting {device_name[:15]}... ({serial})",
                     unit="day",
                     leave=False,
+                    position=1,
                     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
                 )
 
@@ -189,9 +196,45 @@ def main():
                         return
 
                     result = future.result()
+
+                    if (
+                        result
+                        and isinstance(result, dict)
+                        and "paramDataList" in result
+                    ):
+                        df = process_api.process_api_response(result["paramDataList"])
+
+                        if not df.empty:
+                            record_count += len(df)
+                            processing_time = time.time() - start_time
+                            total_processing_time += processing_time
+                            avg_time_per_day_total = total_processing_time / (
+                                record_count or 1
+                            )
+
+                            raw_output_dir = Path(setup.RAW_CSV_OUTPUT)
+                            raw_output_dir.mkdir(parents=True, exist_ok=True)
+
+                            raw_month_dir = raw_output_dir / month
+                            raw_month_dir.mkdir(parents=True, exist_ok=True)
+
+                            df.to_csv(
+                                raw_month_dir / f"{device_name}_{serial}.csv",
+                                index=False,
+                            )
+
                     device_bar.update(1)
+                    device_bar.set_postfix(
+                        {
+                            "Records": record_count,
+                            "Avg Time/Day": f"{avg_time_per_day_total:.2f}s",
+                        }
+                    )
 
             devices_bar.update(1)
+            tqdm.write(
+                f"✔  Completed processing {device_name} ({serial}) for month: {month_year_str}. Records: {record_count}, Avg Time/Day: {avg_time_per_day_total:.2f}s"
+            )
 
         devices_bar.set_postfix(
             {"Month": month_year_str, "Total Devices": len(device_map)}
