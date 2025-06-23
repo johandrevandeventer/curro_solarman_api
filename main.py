@@ -10,6 +10,7 @@ from datetime import datetime
 import time
 
 from config.config import get_config, ConfigError
+from processor.processor import DeviceDataProcessor, DeviceDataProcessorError
 from utils.utils import print_header
 from utils.files import read_device_ids, FileError
 
@@ -61,16 +62,16 @@ def main():
     read_device_id_file_start_time = time.time()
 
     try:
-        device_id_directory = app_config["input"]["device_ids_directory"]
-        device_id_filename = f"{app_config["input"]["device_ids_file_prefix"]}{app_config["input"]["device_ids_file_extension"]}"
+        device_id_dir = app_config["input"]["device_ids_directory"]
+        device_id_filename = f"{app_config["input"]["device_ids_file_prefix"]}.xlsx"
     except KeyError as e:
         print(f"✖  Invalid configuration key: {e}")
         return
 
-    device_id_path = f"{device_id_directory}/{device_id_filename}"
+    device_id_file_path = f"{device_id_dir}/{device_id_filename}"
 
     try:
-        device_map = read_device_ids(device_id_path)
+        device_map = read_device_ids(device_id_file_path)
     except FileError as e:
         print(f"✖  Error reading device IDs: {e}")
         return
@@ -93,6 +94,19 @@ def main():
         print(f"• {device_name} ({serial})")
 
     time.sleep(2)
+
+    # =============================================================================
+    # STEP 4: Initialize Processor
+    # =============================================================================
+    print_header("Initializing Processor")
+
+    try:
+        processor = DeviceDataProcessor(app_config, device_map)
+    except DeviceDataProcessorError as e:
+        print(f"✖  Error initializing processor: {e}")
+        return
+
+    processor.run()
 
 
 if __name__ == "__main__":
