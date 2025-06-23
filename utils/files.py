@@ -14,7 +14,7 @@ class FileError(Exception):
     pass
 
 
-def read_device_ids(file_path: str) -> dict:
+def read_device_ids(file_path: str) -> dict[str, str]:
     """Reads device IDs from an Excel file and returns a mapping of device serial numbers to their connected plant names."""
 
     file = Path(file_path)
