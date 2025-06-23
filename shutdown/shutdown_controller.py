@@ -1,8 +1,11 @@
-# shutdown_controller.py
+# shutdown/shutdown_controller.py
 
 """Module to handle graceful shutdown of a Python application.
 This module provides functionality to register cleanup handlers that will be
-called when a shutdown signal is received (like SIGINT or SIGTERM)."""
+called when a shutdown signal is received (like SIGINT or SIGTERM).
+Author: Johandré van Deventer
+Date: 2025-06-13
+"""
 
 import signal
 import threading
