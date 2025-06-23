@@ -9,6 +9,7 @@ import threading
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
+from dotenv import load_dotenv
 
 _config_lock = threading.Lock()
 _app_config: Optional[Dict[str, Any]] = None
@@ -30,6 +31,28 @@ class ConfigFileError(ConfigError):
     """Exception for configuration file issues"""
 
     pass
+
+
+# Load environment variables first (before any config loading)
+def _init_environment(env_path: str = ".env") -> bool:
+    """
+    Load environment variables from .env file
+
+    Args:
+        env_path: Path to .env file
+
+    Returns:
+        bool: True if loaded successfully, False otherwise
+    """
+    env_file = Path(env_path)
+    if env_file.exists():
+        load_dotenv(env_file)
+        return True
+    return False
+
+
+# Initialize environment at module import
+_init_environment()
 
 
 def _load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
@@ -111,6 +134,21 @@ def _apply_env_overrides(config: Dict[str, Any]) -> Dict[str, Any]:
         config["http_settings"]["headers"][
             "Authorization"
         ] = f"Bearer {os.getenv('API_TOKEN')}"
+
+    if os.getenv("API_APP_ID"):
+        config["http_settings"]["app_id"] = os.getenv("API_APP_ID")
+
+    if os.getenv("API_APP_SECRET"):
+        config["http_settings"]["app_secret"] = os.getenv("API_APP_SECRET")
+
+    if os.getenv("API_EMAIL"):
+        config["http_settings"]["email"] = os.getenv("API_EMAIL")
+
+    if os.getenv("API_PASSWORD"):
+        config["http_settings"]["password"] = os.getenv("API_PASSWORD")
+
+    if os.getenv("API_ORG_ID"):
+        config["http_settings"]["org_id"] = os.getenv("API_ORG_ID")
 
     return config
 
