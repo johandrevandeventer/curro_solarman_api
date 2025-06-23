@@ -139,3 +139,4 @@ cython_debug/
 
 # Project-specific ignores
 resources/
+config.yaml
