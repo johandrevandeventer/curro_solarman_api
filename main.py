@@ -14,6 +14,10 @@ from processor.processor import DeviceDataProcessor, DeviceDataProcessorError
 from utils.utils import print_header
 from utils.files import read_device_ids, FileError
 
+DELAY_1 = 0  # seconds
+DELAY_2 = 0  # seconds
+DELAY_3 = 0  # seconds
+
 
 def main():
     """Main function to start the data collection process.
@@ -28,7 +32,7 @@ def main():
         f"Starting Data Collection at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
 
-    time.sleep(2)
+    time.sleep(DELAY_2)
 
     # =============================================================================
     # STEP 2: Load Configuration
@@ -52,7 +56,7 @@ def main():
     print(
         f"⏱  Time taken to load configuration: {load_configuration_duration:.2f} seconds\n"
     )
-    time.sleep(2)
+    time.sleep(DELAY_2)
 
     # =============================================================================
     # STEP 3: READ DEVICE IDS
@@ -86,14 +90,14 @@ def main():
     )
     print(f"✔  Found {len(device_map)} device IDs to process\n")
 
-    time.sleep(2)
+    time.sleep(DELAY_2)
 
     print_header("Devices Found")
 
     for serial, device_name in device_map.items():
         print(f"• {device_name} ({serial})")
 
-    time.sleep(2)
+    time.sleep(DELAY_2)
 
     # =============================================================================
     # STEP 4: Initialize Processor
