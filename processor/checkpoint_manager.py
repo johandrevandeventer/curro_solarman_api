@@ -9,6 +9,9 @@ Date: 2025-06-13
 """
 
 import pickle
+import os
+import tempfile
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
@@ -31,11 +34,18 @@ class CheckpointManager:
         }
 
     def save_checkpoint(
-        self, device_index: int, device_serial: str, current_date: str
+        self,
+        device_index: int,
+        device_serial: str,
+        current_date: str,
+        max_retries: int = 3,
+        retry_delay: float = 0.1,
     ) -> None:
-        """Save current progress to checkpoint file with additional metadata."""
-        # print_sub_header("Saving Checkpoint")
-
+        """Save current progress to checkpoint file with additional metadata.
+        Args:
+            max_retries: Number of attempts to save the checkpoint
+            retry_delay: Initial delay between retries (in seconds, increases exponentially)
+        """
         # Update checkpoint data
         self.checkpoint_data.update(
             {
@@ -46,23 +56,53 @@ class CheckpointManager:
             }
         )
 
-        # Ensure directory exists
-        file = Path(self.checkpoint_file_path)
+        # Ensure paths are absolute and directory exists
+        file = Path(self.checkpoint_file_path).absolute()
         file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Atomic write operation
-        temp_file = file.with_suffix(".tmp")
-        try:
-            with open(temp_file, "wb") as f:
-                pickle.dump(self.checkpoint_data, f)
-            temp_file.replace(file)  # Atomic rename
-            # print(
-            #     f"Checkpoint saved successfully: device {device_index}, serial {device_serial}, date {current_date}"
-            # )
-        except Exception as e:
-            print(f"Failed to save checkpoint: {str(e)}")
-            if temp_file.exists():
-                temp_file.unlink()
+        last_error = None
+        for attempt in range(max_retries):
+            temp_path = None
+            try:
+                # Create temp file in the same directory as target
+                with tempfile.NamedTemporaryFile(
+                    mode="wb",
+                    dir=str(file.parent),
+                    prefix="checkpoint_",
+                    suffix=".tmp",
+                    delete=False,
+                ) as f:
+                    temp_path = Path(f.name)
+                    pickle.dump(self.checkpoint_data, f)
+                    f.flush()
+                    os.fsync(f.fileno())
+
+                # Attempt atomic rename with retries
+                try:
+                    temp_path.replace(file)
+                    return  # Success!
+                except PermissionError as e:
+                    # Windows may need time to release locks
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay * (2**attempt))  # Exponential backoff
+                        continue
+                    raise
+
+            except Exception as e:
+                last_error = e
+                if temp_path and temp_path.exists():
+                    try:
+                        temp_path.unlink()
+                    except:
+                        pass  # Don't mask original error
+                if attempt == max_retries - 1:
+                    print(
+                        f"Failed to save checkpoint after {max_retries} attempts: {last_error}"
+                    )
+                    raise  # Re-raise last error if all retries fail
+
+        # This should never be reached due to the return/raise above
+        raise RuntimeError("Unexpected error in save_checkpoint")
 
     def mark_device_complete(self, device_serial: str) -> None:
         """Mark a device as fully processed."""
@@ -108,6 +148,7 @@ class CheckpointManager:
             print(
                 f"Completed devices: {len(loaded_data.get('completed_devices', set()))}"
             )
+            print()
 
             # Merge with current checkpoint data (for new fields)
             self.checkpoint_data.update(loaded_data)
