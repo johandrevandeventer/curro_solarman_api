@@ -29,7 +29,7 @@ def _trigger_shutdown(signum=None, frame=None):
     """Internal: Signal handler that initiates shutdown."""
     if not _shutdown_requested.is_set():
         _shutdown_requested.set()
-        print("\nShutdown requested. Running cleanup handlers...")
+        # print("\nShutdown requested. Running cleanup handlers...", flush=True)
         for handler in _cleanup_handlers:
             try:
                 handler()
